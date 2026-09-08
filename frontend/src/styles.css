@@ -179,3 +179,38 @@ kbd {
   outline: none;
   border-color: #4d9ef6;
 }
+
+.new-deck-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.input {
+  flex: 1;
+  padding: 10px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4d9ef6;
+}
+
+.btn-secondary {
+  padding: 10px 14px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #333;
+}

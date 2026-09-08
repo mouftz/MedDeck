@@ -7,8 +7,14 @@ contextBridge.exposeInMainWorld('api', {
   generateCard: (imageBase64, reason) => {
     return ipcRenderer.invoke('generate-card', { imageBase64, reason });
   },
-  saveCard: (front, back, reason) => {
-    return ipcRenderer.invoke('save-card', { front, back, reason });
+  saveCard: (front, back, reason, deckName) => {
+    return ipcRenderer.invoke('save-card', { front, back, reason, deckName });
+  },
+  listDecks: () => {
+    return ipcRenderer.invoke('list-decks');
+  },
+  createDeck: (deckName) => {
+    return ipcRenderer.invoke('create-deck', { deckName });
   },
   hidePopup: () => {
     ipcRenderer.send('hide-popup');

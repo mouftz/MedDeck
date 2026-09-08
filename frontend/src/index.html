@@ -21,6 +21,8 @@ const REASONS = [
   "Forgot detail"
 ];
 
+const CREATE_NEW = "__create_new__";
+
 function App() {
   const [screenshot, setScreenshot] = useState(null);
   const [reason, setReason] = useState(REASONS[0]);
@@ -32,6 +34,11 @@ function App() {
   const [saveResult, setSaveResult] = useState(null);
   const [rejected, setRejected] = useState(null);
   const [error, setError] = useState(null);
+  
+  const [decks, setDecks] = useState([]);
+  const [selectedDeck, setSelectedDeck] = useState("Wrong Answers");
+  const [newDeckName, setNewDeckName] = useState("");
+  const [showNewDeckInput, setShowNewDeckInput] = useState(false);
 
   useEffect(() => {
     window.api.onScreenshot((base64) => {
@@ -40,8 +47,41 @@ function App() {
       setSaveResult(null);
       setRejected(null);
       setError(null);
+      loadDecks();
     });
   }, []);
+
+  const loadDecks = async () => {
+    const response = await window.api.listDecks();
+    if (response.decks) {
+      setDecks(response.decks);
+      if (!response.decks.includes(selectedDeck)) {
+        setSelectedDeck(response.decks[0] || "Wrong Answers");
+      }
+    }
+  };
+
+  const handleDeckChange = (value) => {
+    if (value === CREATE_NEW) {
+      setShowNewDeckInput(true);
+    } else {
+      setSelectedDeck(value);
+      setShowNewDeckInput(false);
+    }
+  };
+
+  const handleCreateDeck = async () => {
+    if (!newDeckName.trim()) return;
+    const response = await window.api.createDeck(newDeckName.trim());
+    if (response.error) {
+      setError(response.error);
+    } else {
+      await loadDecks();
+      setSelectedDeck(newDeckName.trim());
+      setNewDeckName("");
+      setShowNewDeckInput(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!screenshot) return;
@@ -67,7 +107,7 @@ function App() {
     setSaving(true);
     setError(null);
 
-    const response = await window.api.saveCard(editedFront, editedBack, reason);
+    const response = await window.api.saveCard(editedFront, editedBack, reason, selectedDeck);
     setSaving(false);
 
     if (response.error) {
@@ -139,6 +179,30 @@ function App() {
 
       {generatedCard && !saveResult && (
         <>
+          <label className="label">Deck</label>
+          {!showNewDeckInput ? (
+            <select 
+              className="select" 
+              value={selectedDeck} 
+              onChange={(e) => handleDeckChange(e.target.value)}
+            >
+              {decks.map(d => <option key={d} value={d}>{d}</option>)}
+              <option value={CREATE_NEW}>+ Create new deck...</option>
+            </select>
+          ) : (
+            <div className="new-deck-row">
+              <input 
+                className="input" 
+                value={newDeckName} 
+                onChange={(e) => setNewDeckName(e.target.value)}
+                placeholder="Deck name"
+                autoFocus
+              />
+              <button className="btn-secondary" onClick={handleCreateDeck}>Add</button>
+              <button className="btn-secondary" onClick={() => setShowNewDeckInput(false)}>×</button>
+            </div>
+          )}
+
           <label className="label">Front (edit if needed)</label>
           <textarea
             className="textarea"
@@ -160,7 +224,7 @@ function App() {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save to Anki"}
+            {saving ? "Saving..." : `Save to "${selectedDeck}"`}
           </button>
         </>
       )}

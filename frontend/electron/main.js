@@ -26,7 +26,7 @@ function createPopupWindow() {
   });
 
   popupWindow.loadFile(path.join(__dirname, '..', 'src', 'index.html'));
-  popupWindow.webContents.openDevTools({ mode: 'detach' });
+  // popupWindow.webContents.openDevTools({ mode: 'detach' });
   
   popupWindow.on('closed', () => {
     popupWindow = null;
@@ -98,7 +98,7 @@ ipcMain.handle('generate-card', async (event, { imageBase64, reason }) => {
   }
 });
 
-ipcMain.handle('save-card', async (event, { front, back, reason }) => {
+ipcMain.handle('save-card', async (event, { front, back, reason, deckName }) => {
   try {
     const response = await fetch('http://127.0.0.1:8001/save-card', {
       method: 'POST',
@@ -106,7 +106,8 @@ ipcMain.handle('save-card', async (event, { front, back, reason }) => {
       body: JSON.stringify({
         anki_front: front,
         anki_back: back,
-        reason: reason
+        reason: reason,
+        deck_name: deckName || 'Wrong Answers'
       })
     });
     
@@ -115,6 +116,30 @@ ipcMain.handle('save-card', async (event, { front, back, reason }) => {
       throw new Error(`Backend error: ${errorText}`);
     }
     
+    return await response.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle('list-decks', async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:8001/decks');
+    if (!response.ok) throw new Error('Failed to fetch decks');
+    return await response.json();
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+
+ipcMain.handle('create-deck', async (event, { deckName }) => {
+  try {
+    const response = await fetch('http://127.0.0.1:8001/decks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deck_name: deckName })
+    });
+    if (!response.ok) throw new Error('Failed to create deck');
     return await response.json();
   } catch (err) {
     return { error: err.message };
