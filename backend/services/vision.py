@@ -10,10 +10,18 @@ load_dotenv()
 FAKE_VISION = os.getenv("MEDDECK_FAKE_VISION") == "1"
 vision_calls = 0  # how many times the model was actually invoked
 
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-)
+_client = None
+
+
+def _get_client() -> OpenAI:
+    """Build the OpenRouter client lazily so importing this module needs no key."""
+    global _client
+    if _client is None:
+        _client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+    return _client
 
 _FAKE_BANK = [
     ("Most common cause of community-acquired pneumonia?", "Streptococcus pneumoniae."),
@@ -63,7 +71,7 @@ If it is NOT a medical question (e.g., a random screenshot, chat, webpage), retu
   "reason": "brief explanation of what the image actually is"
 }"""
 
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
         messages=[
             {
