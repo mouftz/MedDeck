@@ -1,17 +1,49 @@
 import os
 import json
 import base64
+import hashlib
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
+
+FAKE_VISION = os.getenv("MEDDECK_FAKE_VISION") == "1"
+vision_calls = 0  # how many times the model was actually invoked
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
+_FAKE_BANK = [
+    ("Most common cause of community-acquired pneumonia?", "Streptococcus pneumoniae."),
+    ("First-line treatment for anaphylaxis?", "Intramuscular epinephrine."),
+    ("Antidote for acetaminophen overdose?", "N-acetylcysteine."),
+    ("Clotting factor deficient in hemophilia A?", "Factor VIII."),
+    ("Acid-base disturbance from prolonged vomiting?", "Metabolic alkalosis."),
+    ("Most common type of kidney stone?", "Calcium oxalate."),
+]
+
+
+def _fake_card(image_base64: str) -> dict:
+    idx = int(hashlib.sha256(image_base64.encode()).hexdigest(), 16) % len(_FAKE_BANK)
+    front, back = _FAKE_BANK[idx]
+    return {
+        "is_question": True,
+        "question": front,
+        "correct_answer": back,
+        "explanation": back,
+        "anki_front": front,
+        "anki_back": back,
+    }
+
+
 def generate_anki_card(image_base64: str) -> dict:
+    global vision_calls
+    vision_calls += 1
+    if FAKE_VISION:
+        return _fake_card(image_base64)
+
     prompt = """This is a screenshot the user took.
 First, determine if this is a medical exam/study question with a clear correct answer.
 

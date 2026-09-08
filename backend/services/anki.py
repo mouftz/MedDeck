@@ -25,6 +25,14 @@ def get_deck_names():
 def create_deck(deck_name: str):
     return _invoke("createDeck", deck=deck_name)
 
+def get_deck_fronts(deck_name: str) -> list:
+    """Return the Front field of every existing note in a deck (for dedup)."""
+    note_ids = _invoke("findNotes", query=f'deck:"{deck_name}"')
+    if not note_ids:
+        return []
+    infos = _invoke("notesInfo", notes=note_ids)
+    return [i["fields"]["Front"]["value"] for i in infos if "Front" in i.get("fields", {})]
+
 def add_card(deck_name: str, front: str, back: str, tags: list = None):
     if tags is None:
         tags = []
